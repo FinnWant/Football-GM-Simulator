@@ -14,6 +14,7 @@ class player {
         string name;
     public:
         player(string pos, int orat, int num, int a, string n);
+        virtual ~player() = default;
 
         // Getters
         string get_position() const;
