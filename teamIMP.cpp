@@ -5,11 +5,13 @@
 #include <vector>
 using namespace std;
 
-team::team(string t_name, string c_name, vector<shared_ptr<player>> p_list)
-    : team_name(t_name), coach_name(c_name), players(p_list), wins(0),
-      losses(0), ties(0), record{0, 0} {}
+team::team(string t_name, string c_name, string city,
+           vector<shared_ptr<player>> p_list)
+    : team_name(t_name), coach_name(c_name), city(city), players(p_list),
+      wins(0), losses(0), ties(0), record{0, 0} {}
 string team::get_team_name() const { return team_name; }
 string team::get_coach_name() const { return coach_name; }
+string team::get_city() const { return city; }
 vector<shared_ptr<player>> team::get_players() const { return players; }
 void team::set_team_name(const string &t_name) { team_name = t_name; }
 void team::set_coach_name(const string &c_name) { coach_name = c_name; }

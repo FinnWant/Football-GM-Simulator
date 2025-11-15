@@ -99,11 +99,25 @@ struct game_state {
     sort(home_defense.begin(), home_defense.end(), cmp);
     sort(away_defense.begin(), away_defense.end(), cmp);
 
-    cout << "The " << recordHome.first << "-" << recordHome.second << " "
+    cout << "Welcome to the beautiful city of " << home.get_city()
+         << " and we have a primetime matchup where "
+         << "the " << recordHome.first << "-" << recordHome.second << " "
          << home.get_team_name() << " are playing the " << recordAway.first
          << "-" << recordAway.second << " " << away.get_team_name() << "!"
          << endl;
 
+    auto star_home = home_offense[0];
+    auto star_away = away_offense[0];
+
+    cout << "Before we kick off lets look at some key players for each team\n"
+         << "For the " << home.get_city() << " " << home.get_team_name()
+         << "  they have their star " << star_home->get_position() << " "
+         << star_home->get_name() << endl;
+    cout << "And for the " << away.get_city() << " " << away.get_team_name()
+         << "  they have their star " << star_away->get_position() << " "
+         << star_away->get_name() << endl;
+    cout << "Now with the pregame theatrics out the way lets head to kickoff!"
+         << endl;
     do {
       // basic status print
       cout << "Quarter: " << quarter << " " << (time_remaining / 60) << "m "
@@ -188,26 +202,30 @@ struct game_state {
               // sack
               down++;
               time_remaining -= 10;
-              cout << "The quarterback is sacked!" << endl;
+              cout << qb_sp->get_name() << " is sacked!" << endl;
               yards_to_go += 4; // lost yardage
               apply_loss(4);
             } else if (roll < 90) {
               if (rand() % 2) {
-                cout << "The pass is incomplete due to pressure!" << endl;
+                cout << "The pass from " << qb_sp->get_name()
+                     << " is incomplete to " << wr_sp->get_name()
+                     << " due to pressure!" << endl;
                 down++;
                 time_remaining -= 7;
               } else {
                 int gain = rand() % 5 + 1; // short gain
-                cout << "The pass is completed for a short gain of " << gain
-                     << " yards!" << endl;
+                cout << "The pass from " << qb_sp->get_name()
+                     << " is completed to " << wr_sp->get_name()
+                     << " for a short gain of " << gain << " yards!" << endl;
                 apply_gain(gain);
                 down++;
                 time_remaining -= 10;
               }
             } else {
               int gain = rand() % 10 + 1; // moderate gain
-              cout << "The pass is contested but completed for a gain of "
-                   << gain << " yards!" << endl;
+              cout << "The pass from " << qb_sp->get_name()
+                   << "is contested but completed to " << wr_sp->get_name()
+                   << " for a gain of " << gain << " yards!" << endl;
               apply_gain(gain);
               down++;
               time_remaining -= 12;
@@ -216,7 +234,7 @@ struct game_state {
             if (roll < 25) {
               down++;
               time_remaining -= 10;
-              cout << "The quarterback is sacked!" << endl;
+              cout << qb_sp->get_name() << " is sacked!" << endl;
               yards_to_go += 4;
               apply_loss(4);
             } else if (roll < 75) {
@@ -226,7 +244,9 @@ struct game_state {
                 time_remaining -= 7;
               } else {
                 int gain = rand() % 5 + 1;
-                cout << "The pass is completed for a short gain of " << gain
+                cout << "The pass from" << qb_sp->get_name() << " to "
+                     << wr_sp->get_name()
+                     << " is completed for a short gain of " << gain
                      << " yards!" << endl;
                 apply_gain(gain);
                 down++;
@@ -234,8 +254,9 @@ struct game_state {
               }
             } else {
               int gain = rand() % 10 + 1;
-              cout << "The pass is contested but completed for a gain of "
-                   << gain << " yards!" << endl;
+              cout << "The pass from " << qb_sp->get_name()
+                   << "is contested but completed to " << wr_sp->get_name()
+                   << " for a gain of " << gain << " yards!" << endl;
               apply_gain(gain);
               down++;
               time_remaining -= 12;
@@ -244,20 +265,22 @@ struct game_state {
             if (roll < 10) {
               down++;
               time_remaining -= 10;
-              cout << "The quarterback is sacked!" << endl;
+              cout << qb_sp->get_name() << "is sacked!" << endl;
               yards_to_go += 4;
               apply_loss(4);
             } else if (roll < 75) {
               int gain = rand() % 10 + 1;
-              cout << "The pass is contested but completed for a gain of "
-                   << gain << " yards!" << endl;
+              cout << "The pass from " << qb_sp->get_name()
+                   << "is contested but completed to " << wr_sp->get_name()
+                   << " for a gain of " << gain << " yards!" << endl;
               apply_gain(gain);
               down++;
               time_remaining -= 12;
             } else {
               int gain = rand() % 20 + 5;
-              cout << "The pass is completed for a gain of " << gain
-                   << " yards!" << endl;
+              cout << "The pass from " << qb_sp->get_name()
+                   << "is completed to " << wr_sp->get_name()
+                   << " for a gain of " << gain << " yards!" << endl;
               apply_gain(gain);
               down++;
               time_remaining -= 15;
@@ -265,15 +288,17 @@ struct game_state {
           } else {
             if (roll < 85) {
               int gain = rand() % 20 + 5;
-              cout << "The pass is completed for a gain of " << gain
-                   << " yards!" << endl;
+              cout << "The pass from " << qb_sp->get_name()
+                   << "is completed to " << wr_sp->get_name()
+                   << "for a gain of " << gain << " yards!" << endl;
               apply_gain(gain);
               down++;
               time_remaining -= 15;
             } else {
               int gain = rand() % 50 + 20;
-              cout << "The pass is a big play for a gain of " << gain
-                   << " yards!" << endl;
+              cout << "The pass from " << qb_sp->get_name()
+                   << "is a big play to " << wr_sp->get_name()
+                   << " for a huge gain of " << gain << " yards!" << endl;
               apply_gain(gain);
               down++;
               time_remaining -= 20;
@@ -319,15 +344,16 @@ struct game_state {
 
           if (rb_runpower > defense_stop) {
             int gain = rand() % 10 + 3; // typical run gain
-            cout << "The run is successful for a gain of " << gain << " yards!"
+            cout << "The run from " << rb_sp->get_name()
+                 << " is successful for a gain of " << gain << " yards!"
                  << endl;
             apply_gain(gain);
             down++;
             time_remaining -= 10;
           } else {
             int loss = rand() % 3 + 1; // typical loss on stopped run
-            cout << "The run is stopped for a loss of " << loss << " yards!"
-                 << endl;
+            cout << "The run from " << rb_sp->get_name()
+                 << " is stopped for a loss of " << loss << " yards!" << endl;
             apply_loss(loss);
             down++;
             time_remaining -= 8;

@@ -10,18 +10,22 @@ class team {
   vector<shared_ptr<player>> players;
   string team_name;
   string coach_name;
+  string city;
   int wins{0};
   int losses{0};
   int ties{0};
   pair<int, int> record{0, 0};
 
 public:
-  team(string t_name, string c_name, vector<shared_ptr<player>> p_list);
+  team(string t_name, string c_name, string city,
+       vector<shared_ptr<player>> p_list);
   string get_team_name() const;
   string get_coach_name() const;
+  string get_city() const;
   vector<shared_ptr<player>> get_players() const;
   void set_team_name(const string &t_name);
   void set_coach_name(const string &c_name);
+  void set_cirt(const string &city);
   void set_players(const vector<shared_ptr<player>> &p_list);
   pair<int, int> get_record() const;
   void update_record(bool win, bool tie);

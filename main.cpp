@@ -119,11 +119,16 @@ string generateName() {
   return first + " " + last;
 }
 
+// Generate a random city name
+string generateCity() {
+  string city = cities[randInt(0, cities.size() - 1)];
+  return city;
+}
+
 // Generate a random team name
 string generateTeamName() {
-  string city = cities[randInt(0, cities.size() - 1)];
   string name = teamNames[randInt(0, teamNames.size() - 1)];
-  return city + " " + name;
+  return name;
 }
 
 // Generate a random coach name
@@ -299,6 +304,7 @@ shared_ptr<player> createPlayer() {
 team generateRandTeam() {
   string teamName = generateTeamName();
   string coachName = generateCoachName();
+  string city = generateCity();
   vector<shared_ptr<player>> roster;
 
   // Create players for each position based on roster requirements
@@ -321,7 +327,7 @@ team generateRandTeam() {
   roster.push_back(generateRandPlayer("K"));
   roster.push_back(generateRandPlayer("P"));
 
-  return team(teamName, coachName, roster);
+  return team(teamName, coachName, city, roster);
 }
 
 // Create a team with user input
@@ -330,7 +336,8 @@ vector<team> generateNFLTeams() {
   vector<team> nflTeams_generated;
 
   for (const auto &teamInfo : nflTeams) {
-    string fullName = teamInfo.city + " " + teamInfo.name;
+    string fullName = teamInfo.name;
+    string city = teamInfo.city;
     vector<shared_ptr<player>> roster;
 
     // Generate roster using proper NFL position counts
@@ -353,7 +360,7 @@ vector<team> generateNFLTeams() {
     roster.push_back(generateRandPlayer("K"));
     roster.push_back(generateRandPlayer("P"));
 
-    team newTeam(fullName, teamInfo.coach, roster);
+    team newTeam(fullName, teamInfo.coach, city, roster);
     nflTeams_generated.push_back(newTeam);
   }
 
@@ -361,7 +368,7 @@ vector<team> generateNFLTeams() {
 }
 
 team createTeam() {
-  string teamName, coachName;
+  string teamName, coachName, city;
   char choice;
   vector<shared_ptr<player>> roster;
 
@@ -372,6 +379,9 @@ team createTeam() {
 
   cout << "Enter head coach name: ";
   getline(cin, coachName);
+
+  cout << "Enter City Name: ";
+  getline(cin, city);
 
   cout << "\nDo you want to:\n";
   cout << "1. Create team player by player\n";
@@ -462,7 +472,7 @@ team createTeam() {
     roster.push_back(generateRandPlayer("P"));
   }
 
-  return team(teamName, coachName, roster);
+  return team(teamName, coachName, city, roster);
 }
 
 // Display a team's roster
@@ -551,11 +561,45 @@ int main() {
       break;
     }
     case '5': {
-      cout << "let's play a game!\n";
-      // generate 2 teams and have them play
+      cout << "Would you like to: \n1.) Create 2 teams from scratch \n2.) Load "
+              "an NFL team and play against the computer\n3.) Generate 2 "
+              "random teams and have them play\n";
+      int gameChoice = getIntInput(1, 3, "Enter choice (1-3): ");
+
       team home = generateRandTeam();
       team away = generateRandTeam();
       game_state game;
+
+      if (gameChoice == 1) {
+        cout << "\nCreate Home Team:\n";
+        home = createTeam();
+        cout << "\nCreate Away Team:\n";
+        away = createTeam();
+      } else if (gameChoice == 2) {
+        // ensure NFL teams are loaded
+        if (nflTeams.empty()) {
+          cout << "NFL teams are not loaded. Generating NFL teams now...\n";
+          nflTeams = generateNFLTeams();
+        }
+
+        cout << "\nAvailable NFL Teams:\n";
+        for (size_t i = 0; i < nflTeams.size(); ++i) {
+          cout << i + 1 << ". " << nflTeams[i].get_team_name() << "\n";
+        }
+        int teamChoice =
+            getIntInput(1, (int)nflTeams.size(), "Enter team number (1-32): ");
+        // player will use the selected NFL team as home
+        home = nflTeams[teamChoice - 1];
+        cout << "Generating a random opponent...\n";
+        away = generateRandTeam();
+      } else {
+        // default: two random teams
+        home = generateRandTeam();
+        away = generateRandTeam();
+      }
+
+      cout << "\nHome team: " << home.get_team_name() << "\n";
+      cout << "Away team: " << away.get_team_name() << "\n";
       game.play_game(home, away);
       break;
     }
