@@ -56,7 +56,7 @@ View results, player stats, standings (comming soon)
 Save your progress and pick up later
 (Future UI enhancements or CLI menus may expand this basic workflow.)
 
-📈 Why This Project?
+## 📈 Why This Project?
 
 This simulator provides a fun, educational tool in several ways:
 Learning C++ architecture: Demonstrates how to structure classes, split headers/implementations, manage persistence, and simulate events
@@ -64,7 +64,7 @@ Algorithmic design & simulation: Game-logic, season progression, team management
 Extensibility for hobbyists: You could build a GUI on top, introduce a web interface, integrate machine learning for drafting, or build a mobile version
 Passion for sports & coding: Combines your love for football (your favourite team being the Pittsburgh Steelers!) and software development into a cohesive project.
 
-🤝 Contributing
+## 🤝 Contributing
 
 Contributions are very welcome! Here’s how to help:
 Fork the repository
@@ -75,11 +75,11 @@ Ensure your code compiles and adheres to the existing coding style
 Write tests if you introduce new logic
 Describe your feature/enhancement in the PR description
 
-📝 License
+## 📝 License
 
-This project is open-source under the MIT License — feel free to modify, share, and build upon it.
+# This project is open-source under the MIT License — feel free to modify, share, and build upon it.
 
-📬 Contact & Feedback
+## 📬 Contact & Feedback
 Created by FinnWant. If you have ideas, bug reports, or want to collaborate:
 Open an issue on GitHub
 Or drop me a message on GitHub
