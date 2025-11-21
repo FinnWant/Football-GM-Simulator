@@ -1,3 +1,4 @@
+#include "persistence.h"
 #include "playerH.h"
 #include "simulation.h"
 #include "team.h"
@@ -516,7 +517,9 @@ int main() {
     cout << "4. Generate Random Team\n";
     cout << "5. Play a Game\n";
     cout << "6. Exit\n";
-    cout << "Enter choice (1-6): ";
+    cout << "7. Save a Team to File\n";
+    cout << "8. Load a Team from File\n";
+    cout << "Enter choice (1-8): ";
     cin >> choice;
 
     switch (choice) {
@@ -564,7 +567,9 @@ int main() {
       cout << "Would you like to: \n1.) Create 2 teams from scratch \n2.) Load "
               "an NFL team and play against the computer\n3.) Generate 2 "
               "random teams and have them play\n";
-      int gameChoice = getIntInput(1, 3, "Enter choice (1-3): ");
+      cout << "4.) Load a saved team from file and play against a generated "
+              "opponent\n";
+      int gameChoice = getIntInput(1, 4, "Enter choice (1-4): ");
 
       team home = generateRandTeam();
       team away = generateRandTeam();
@@ -592,10 +597,26 @@ int main() {
         home = nflTeams[teamChoice - 1];
         cout << "Generating a random opponent...\n";
         away = generateRandTeam();
-      } else {
+      } else if (gameChoice == 3) {
         // default: two random teams
         home = generateRandTeam();
         away = generateRandTeam();
+      } else {
+        // load from file and play a generated opponent
+        cout << "Enter filename to load team from: ";
+        string path;
+        cin >> path;
+        team loaded("", "", "", {});
+        if (load_team(path, loaded)) {
+          cout << "Loaded team: " << loaded.get_team_name() << "\n";
+          home = loaded;
+          away = generateRandTeam();
+        } else {
+          cout << "Failed to load team from " << path
+               << ". Using two random teams instead.\n";
+          home = generateRandTeam();
+          away = generateRandTeam();
+        }
       }
 
       cout << "\nHome team: " << home.get_team_name() << "\n";
@@ -606,6 +627,51 @@ int main() {
     case '6':
       cout << "Goodbye!\n";
       break;
+    case '7': {
+      cout << "Save a team to file.\n";
+      cout << "1) Save an NFL team (must be loaded)\n";
+      cout << "2) Create a new custom team to save\n";
+      cout << "3) Generate a random team to save\n";
+      int schoice = getIntInput(1, 3, "Enter choice (1-3): ");
+      team tsave("", "", "", {});
+      if (schoice == 1) {
+        if (nflTeams.empty()) {
+          cout << "NFL teams are not loaded. Generating now...\n";
+          nflTeams = generateNFLTeams();
+        }
+        cout << "Select NFL team to save:\n";
+        for (size_t i = 0; i < nflTeams.size(); ++i)
+          cout << i + 1 << ". " << nflTeams[i].get_team_name() << "\n";
+        int idx = getIntInput(1, (int)nflTeams.size(), "Enter team number: ");
+        tsave = nflTeams[idx - 1];
+      } else if (schoice == 2) {
+        tsave = createTeam();
+      } else {
+        tsave = generateRandTeam();
+      }
+      string path;
+      cout << "Enter filename to save to: ";
+      cin >> path;
+      if (save_team(tsave, path))
+        cout << "Team saved to " << path << "\n";
+      else
+        cout << "Failed to save team to " << path << "\n";
+      break;
+    }
+    case '8': {
+      cout << "Load a team from file.\n";
+      string path;
+      cout << "Enter filename to load from: ";
+      cin >> path;
+      team loaded("", "", "", {});
+      if (load_team(path, loaded)) {
+        cout << "Team loaded from " << path << ":\n";
+        displayTeam(loaded);
+      } else {
+        cout << "Failed to load team from " << path << "\n";
+      }
+      break;
+    }
     default:
       cout << "Invalid choice. Please try again.\n";
     }
