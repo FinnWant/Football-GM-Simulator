@@ -77,7 +77,7 @@ Describe your feature/enhancement in the PR description
 
 ## 📝 License
 
-# This project is open-source under the MIT License — feel free to modify, share, and build upon it.
+#### This project is open-source under the MIT License — feel free to modify, share, and build upon it.
 
 ## 📬 Contact & Feedback
 Created by FinnWant. If you have ideas, bug reports, or want to collaborate:
