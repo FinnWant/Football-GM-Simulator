@@ -1,148 +1,31 @@
+#include "generation.h"
+#include "league.h"
 #include "persistence.h"
 #include "playerH.h"
 #include "simulation.h"
 #include "team.h"
 #include <algorithm>
+#include <cstdio>
+#include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <map>
-#include <random>
 #include <string>
 #include <vector>
 using namespace std;
-
-// NFL team data structure
-struct NFLTeamInfo {
-  string name;
-  string city;
-  string coach;
-};
-
-// NFL Teams Database
-vector<NFLTeamInfo> nflTeams = {{"Bills", "Buffalo", "Sean McDermott"},
-                                {"Dolphins", "Miami", "Mike McDaniel"},
-                                {"Patriots", "New England", "Bill Belichick"},
-                                {"Jets", "New York", "Robert Saleh"},
-                                {"Ravens", "Baltimore", "John Harbaugh"},
-                                {"Bengals", "Cincinnati", "Zac Taylor"},
-                                {"Browns", "Cleveland", "Kevin Stefanski"},
-                                {"Steelers", "Pittsburgh", "Mike Tomlin"},
-                                {"Texans", "Houston", "DeMeco Ryans"},
-                                {"Colts", "Indianapolis", "Shane Steichen"},
-                                {"Jaguars", "Jacksonville", "Doug Pederson"},
-                                {"Titans", "Tennessee", "Mike Vrabel"},
-                                {"Broncos", "Denver", "Sean Payton"},
-                                {"Chiefs", "Kansas City", "Andy Reid"},
-                                {"Raiders", "Las Vegas", "Josh McDaniels"},
-                                {"Chargers", "Los Angeles", "Brandon Staley"},
-                                {"Cowboys", "Dallas", "Mike McCarthy"},
-                                {"Giants", "New York", "Brian Daboll"},
-                                {"Eagles", "Philadelphia", "Nick Sirianni"},
-                                {"Commanders", "Washington", "Ron Rivera"},
-                                {"Bears", "Chicago", "Matt Eberflus"},
-                                {"Lions", "Detroit", "Dan Campbell"},
-                                {"Packers", "Green Bay", "Matt LaFleur"},
-                                {"Vikings", "Minnesota", "Kevin O'Connell"},
-                                {"Falcons", "Atlanta", "Arthur Smith"},
-                                {"Panthers", "Carolina", "Frank Reich"},
-                                {"Saints", "New Orleans", "Dennis Allen"},
-                                {"Buccaneers", "Tampa Bay", "Todd Bowles"},
-                                {"Cardinals", "Arizona", "Jonathan Gannon"},
-                                {"Rams", "Los Angeles", "Sean McVay"},
-                                {"49ers", "San Francisco", "Kyle Shanahan"},
-                                {"Seahawks", "Seattle", "Pete Carroll"}};
-
-// Random number generator setup
-random_device rd;
-mt19937 gen(rd());
-
-// Helper function to generate random number in range [min, max]
-int randInt(int min, int max) {
-  uniform_int_distribution<> dis(min, max);
-  return dis(gen);
-}
-
-// Lists of names for random generation
-vector<string> firstNames = {
-    "John",      "Michael",     "David",   "James",  "Robert", "William",
-    "Thomas",    "Christopher", "Daniel",  "Joseph", "Steven", "Brian",
-    "Kevin",     "Jason",       "Justin",  "Ryan",   "Eric",   "Brandon",
-    "Alexander", "Zachary",     "Nathan",  "Austin", "Hunter", "Dylan",
-    "Blake",     "Logan",       "Evan",    "Sean",   "Tyler",  "Landon",
-    "Parker",    "Matthew",     "Andrew",  "Mark",   "Paul",   "Kenneth",
-    "George",    "Scott",       "Charles", "Anthony"};
-vector<string> lastNames = {
-    "Smith",    "Johnson", "Williams",  "Brown",      "Jones",     "Garcia",
-    "Miller",   "Davis",   "Rodriguez", "Martinez",   "Hernandez", "Lopez",
-    "Gonzalez", "Wilson",  "Anderson",  "Clark",      "Lee",       "Walker",
-    "Hall",     "Allen",   "Young",     "King",       "Wright",    "Scott",
-    "Green",    "Adams",   "Baker",     "Nelson",     "Carter",    "Mitchell",
-    "Perez",    "Roberts", "Turner",    "Phillips",   "Campbell",  "Parker",
-    "Evans",    "Edwards", "Collins",   "Stewart",    "Sanchez",   "Morris",
-    "Rogers",   "Reed",    "Cook",      "Morgan",     "Bell",      "Murphy",
-    "Bailey",   "Rivera",  "Cooper",    "Richardson", "Cox",       "Howard",
-    "Ward",     "Torres",  "Peterson",  "Gray",       "Ramirez",   "James",
-    "Brooks"};
-vector<string> teamNames = {
-    "Eagles",    "Lions",     "Bears",      "Vikings",    "Falcons",
-    "Panthers",  "Ravens",    "Bengals",    "Browns",     "Steelers",
-    "Texans",    "Colts",     "Jaguars",    "Titans",     "Broncos",
-    "Sharks",    "Tigers",    "Armada",     "Sentinels",  "Cyclones",
-    "Warriors",  "Avalanche", "Comets",     "Rockets",    "Fusion",
-    "Guardians", "Marauders", "Dragons",    "Phoenix",    "Hornets",
-    "Spartans",  "Knights",   "Outlaws",    "Renegades",  "Stallions",
-    "Riders",    "Legends",   "Pioneers",   "Mustangs",   "Trailblazers",
-    "Thunder",   "Blizzard",  "Hurricanes", "Miners",     "Raptors",
-    "Beacons",   "Savages",   "Phantoms",   "Barracudas", "Outriders"};
-vector<string> cities = {
-    "New York",       "Los Angeles",      "Chicago",       "Houston",
-    "Phoenix",        "Philadelphia",     "San Antonio",   "San Diego",
-    "Dallas",         "Austin",           "Jacksonville",  "Fort Worth",
-    "Columbus",       "Charlotte",        "San Francisco", "Indianapolis",
-    "Seattle",        "Denver",           "Boston",        "El Paso",
-    "Detroit",        "Nashville",        "Portland",      "Memphis",
-    "Oklahoma City",  "Las Vegas",        "Louisville",    "Baltimore",
-    "Milwaukee",      "Albuquerque",      "Tucson",        "Fresno",
-    "Sacramento",     "Kansas City",      "Mesa",          "Atlanta",
-    "Omaha",          "Colorado Springs", "Raleigh",       "Miami",
-    "Virginia Beach", "Oakland",          "Minneapolis",   "Tulsa",
-    "Arlington",      "New Orleans"};
-vector<string> coachFirstNames = {
-    "Andy",  "Bill",  "Mike",   "John",   "Pete",   "Sean",  "Kyle",  "Matt",
-    "Bruce", "Dan",   "Jim",    "Ron",    "Frank",  "Todd",  "Doug",  "Rick",
-    "Eli",   "Greg",  "Nick",   "Ryan",   "Hunter", "Shane", "Corey", "Sam",
-    "Alex",  "Chris", "Pat",    "Ed",     "Tom",    "Gary",  "Mark",  "Steve",
-    "Vince", "Leo",   "Walter", "Martin", "Oscar",  "Theo",  "Drew",  "Jordan"};
-
-// Generate a random name
-string generateName() {
-  string first = firstNames[randInt(0, firstNames.size() - 1)];
-  string last = lastNames[randInt(0, lastNames.size() - 1)];
-  return first + " " + last;
-}
-
-// Generate a random city name
-string generateCity() {
-  string city = cities[randInt(0, cities.size() - 1)];
-  return city;
-}
-
-// Generate a random team name
-string generateTeamName() {
-  string name = teamNames[randInt(0, teamNames.size() - 1)];
-  return name;
-}
-
-// Generate a random coach name
-string generateCoachName() {
-  string first = coachFirstNames[randInt(0, coachFirstNames.size() - 1)];
-  string last = lastNames[randInt(0, lastNames.size() - 1)];
-  return first + " " + last;
-}
 
 // Function to clear input buffer and handle invalid input
 void clearInputBuffer() {
   cin.clear();
   cin.ignore(numeric_limits<streamsize>::max(), '\n');
+}
+
+// Input has closed (EOF/Ctrl+D/Ctrl+Z), so no prompt can ever be answered
+void exitIfInputClosed() {
+  if (cin.eof()) {
+    cout << "\nInput closed. Goodbye!\n";
+    exit(0);
+  }
 }
 
 // Get valid integer input in range
@@ -154,323 +37,65 @@ int getIntInput(int min, int max, const string &prompt) {
       clearInputBuffer();
       return value;
     }
+    exitIfInputClosed();
     cout << "Invalid input. Please enter a number between " << min << " and "
          << max << endl;
     clearInputBuffer();
   }
 }
 
-// Generate a random player for the given position
-shared_ptr<player> generateRandPlayer(string position) {
-  string name = generateName();
-  int number = randInt(1, 99);
-  int age = randInt(21, 35);
-  int overall = randInt(50, 99);
+// Create a player at the given position with user input
+shared_ptr<player> createPlayer(Position position) {
+  string name;
 
-  if (position == "QB") {
-    return make_shared<quarterback>(position, overall, number, age, name,
-                                    randInt(50, 99), randInt(50, 99),
-                                    randInt(50, 99), randInt(50, 99));
-  } else if (position == "RB") {
-    return make_shared<runningback>(position, overall, number, age, name,
-                                    randInt(50, 99), randInt(50, 99),
-                                    randInt(50, 99), randInt(50, 99));
-  } else if (position == "WR") {
-    return make_shared<wide_receiver>(position, overall, number, age, name,
-                                      randInt(50, 99), randInt(50, 99),
-                                      randInt(50, 99));
-  } else if (position == "TE") {
-    return make_shared<tight_end>(position, overall, number, age, name,
-                                  randInt(50, 99), randInt(50, 99),
-                                  randInt(50, 99));
-  } else if (position == "OL") {
-    return make_shared<lineman>(position, overall, number, age, name,
-                                randInt(50, 99), randInt(50, 99),
-                                randInt(50, 99));
-  } else if (position == "DL") {
-    return make_shared<defensive_lineman>(position, overall, number, age, name,
-                                          randInt(50, 99), randInt(50, 99),
-                                          randInt(50, 99));
-  } else if (position == "LB") {
-    return make_shared<linebacker>(position, overall, number, age, name,
-                                   randInt(50, 99), randInt(50, 99),
-                                   randInt(50, 99));
-  } else if (position == "DB") {
-    return make_shared<defensive_back>(position, overall, number, age, name,
-                                       randInt(50, 99), randInt(50, 99),
-                                       randInt(50, 99));
-  } else if (position == "K") {
-    return make_shared<kicker>(position, overall, number, age, name,
-                               randInt(50, 99), randInt(50, 99));
-  } else if (position == "P") {
-    return make_shared<punter>(position, overall, number, age, name,
-                               randInt(50, 99), randInt(50, 99));
-  }
-  // Default case - should never reach here if position is valid
-  return make_shared<player>(position, overall, number, age, name);
-}
-
-// Create a player with user input
-shared_ptr<player> createPlayer() {
-  string name, position;
-  int number, age, overall;
-
-  cout << "\nCreate New Player\n";
   cout << "Enter player name: ";
-  cin.ignore();
-  getline(cin, name);
+  getline(cin >> ws, name);
 
-  cout << "\nAvailable positions:\n";
-  cout << "QB - Quarterback\nRB - Running Back\nWR - Wide Receiver\n";
-  cout << "TE - Tight End\nOL - Offensive Lineman\nDL - Defensive Lineman\n";
-  cout << "LB - Linebacker\nDB - Defensive Back\nK - Kicker\nP - Punter\n";
+  int number = getIntInput(1, 99, "Enter jersey number (1-99): ");
+  int age = getIntInput(21, 35, "Enter age (21-35): ");
+  int overall = getIntInput(50, 99, "Enter overall rating (50-99): ");
 
-  do {
-    cout << "Enter position (QB/RB/WR/TE/OL/DL/LB/DB/K/P): ";
-    cin >> position;
-    transform(position.begin(), position.end(), position.begin(), ::toupper);
-  } while (position != "QB" && position != "RB" && position != "WR" &&
-           position != "TE" && position != "OL" && position != "DL" &&
-           position != "LB" && position != "DB" && position != "K" &&
-           position != "P");
-
-  number = getIntInput(1, 99, "Enter jersey number (1-99): ");
-  age = getIntInput(21, 35, "Enter age (21-35): ");
-  overall = getIntInput(50, 99, "Enter overall rating (50-99): ");
-
-  if (position == "QB") {
-    int tp = getIntInput(50, 99, "Enter throw power (50-99): ");
-    int ta = getIntInput(50, 99, "Enter throw accuracy (50-99): ");
-    int spd = getIntInput(50, 99, "Enter speed (50-99): ");
-    int pv = getIntInput(50, 99, "Enter passing vision (50-99): ");
-    return make_shared<quarterback>(position, overall, number, age, name, tp,
-                                    ta, spd, pv);
-  } else if (position == "RB") {
-    int spd = getIntInput(50, 99, "Enter speed (50-99): ");
-    int car = getIntInput(50, 99, "Enter carrying (50-99): ");
-    int elu = getIntInput(50, 99, "Enter elusiveness (50-99): ");
-    int blk = getIntInput(50, 99, "Enter blocking (50-99): ");
-    return make_shared<runningback>(position, overall, number, age, name, spd,
-                                    car, elu, blk);
-  } else if (position == "WR") {
-    int spd = getIntInput(50, 99, "Enter speed (50-99): ");
-    int ctch = getIntInput(50, 99, "Enter catching (50-99): ");
-    int rr = getIntInput(50, 99, "Enter route running (50-99): ");
-    return make_shared<wide_receiver>(position, overall, number, age, name, spd,
-                                      ctch, rr);
-  } else if (position == "TE") {
-    int spd = getIntInput(50, 99, "Enter speed (50-99): ");
-    int ctch = getIntInput(50, 99, "Enter catching (50-99): ");
-    int blk = getIntInput(50, 99, "Enter blocking (50-99): ");
-    return make_shared<tight_end>(position, overall, number, age, name, spd,
-                                  ctch, blk);
-  } else if (position == "OL" || position == "DL") {
-    int str = getIntInput(50, 99, "Enter strength (50-99): ");
-    int blk = getIntInput(50, 99, "Enter blocking (50-99): ");
-    int tkl = getIntInput(50, 99, "Enter tackling (50-99): ");
-    if (position == "OL") {
-      return make_shared<lineman>(position, overall, number, age, name, str,
-                                  blk, tkl);
-    } else {
-      return make_shared<defensive_lineman>(position, overall, number, age,
-                                            name, str, tkl, blk);
-    }
-  } else if (position == "LB") {
-    int spd = getIntInput(50, 99, "Enter speed (50-99): ");
-    int tkl = getIntInput(50, 99, "Enter tackling (50-99): ");
-    int cvr = getIntInput(50, 99, "Enter coverage (50-99): ");
-    return make_shared<linebacker>(position, overall, number, age, name, spd,
-                                   tkl, cvr);
-  } else if (position == "DB") {
-    int spd = getIntInput(50, 99, "Enter speed (50-99): ");
-    int cvr = getIntInput(50, 99, "Enter coverage (50-99): ");
-    int tkl = getIntInput(50, 99, "Enter tackling (50-99): ");
-    return make_shared<defensive_back>(position, overall, number, age, name,
-                                       spd, cvr, tkl);
-  } else if (position == "K") {
-    int kp = getIntInput(50, 99, "Enter kick power (50-99): ");
-    int ka = getIntInput(50, 99, "Enter kick accuracy (50-99): ");
-    return make_shared<kicker>(position, overall, number, age, name, kp, ka);
-  } else if (position == "P") {
-    int pp = getIntInput(50, 99, "Enter punt power (50-99): ");
-    int pa = getIntInput(50, 99, "Enter punt accuracy (50-99): ");
-    return make_shared<punter>(position, overall, number, age, name, pp, pa);
-  }
-
-  // Default case - should never reach here if position is valid
-  return make_shared<player>(position, overall, number, age, name);
-}
-
-// Generate a random team with a full roster
-team generateRandTeam() {
-  string teamName = generateTeamName();
-  string coachName = generateCoachName();
-  string city = generateCity();
-  vector<shared_ptr<player>> roster;
-
-  // Create players for each position based on roster requirements
-  for (int i = 0; i < 3; i++)
-    roster.push_back(generateRandPlayer("QB"));
-  for (int i = 0; i < 4; i++)
-    roster.push_back(generateRandPlayer("RB"));
-  for (int i = 0; i < 6; i++)
-    roster.push_back(generateRandPlayer("WR"));
-  for (int i = 0; i < 3; i++)
-    roster.push_back(generateRandPlayer("TE"));
-  for (int i = 0; i < 9; i++)
-    roster.push_back(generateRandPlayer("OL"));
-  for (int i = 0; i < 8; i++)
-    roster.push_back(generateRandPlayer("DL"));
-  for (int i = 0; i < 7; i++)
-    roster.push_back(generateRandPlayer("LB"));
-  for (int i = 0; i < 10; i++)
-    roster.push_back(generateRandPlayer("DB"));
-  roster.push_back(generateRandPlayer("K"));
-  roster.push_back(generateRandPlayer("P"));
-
-  return team(teamName, coachName, city, roster);
+  vector<int> attrs;
+  for (const string &attr : attribute_names(position))
+    attrs.push_back(getIntInput(50, 99, "Enter " + attr + " (50-99): "));
+  return make_player(position, overall, number, age, name, attrs);
 }
 
 // Create a team with user input
-// Generate all NFL teams
-vector<team> generateNFLTeams() {
-  vector<team> nflTeams_generated;
-
-  for (const auto &teamInfo : nflTeams) {
-    string fullName = teamInfo.name;
-    string city = teamInfo.city;
-    vector<shared_ptr<player>> roster;
-
-    // Generate roster using proper NFL position counts
-    for (int i = 0; i < 3; i++)
-      roster.push_back(generateRandPlayer("QB"));
-    for (int i = 0; i < 4; i++)
-      roster.push_back(generateRandPlayer("RB"));
-    for (int i = 0; i < 6; i++)
-      roster.push_back(generateRandPlayer("WR"));
-    for (int i = 0; i < 3; i++)
-      roster.push_back(generateRandPlayer("TE"));
-    for (int i = 0; i < 9; i++)
-      roster.push_back(generateRandPlayer("OL"));
-    for (int i = 0; i < 8; i++)
-      roster.push_back(generateRandPlayer("DL"));
-    for (int i = 0; i < 7; i++)
-      roster.push_back(generateRandPlayer("LB"));
-    for (int i = 0; i < 10; i++)
-      roster.push_back(generateRandPlayer("DB"));
-    roster.push_back(generateRandPlayer("K"));
-    roster.push_back(generateRandPlayer("P"));
-
-    team newTeam(fullName, teamInfo.coach, city, roster);
-    nflTeams_generated.push_back(newTeam);
-  }
-
-  return nflTeams_generated;
-}
-
 team createTeam() {
   string teamName, coachName, city;
-  char choice;
   vector<shared_ptr<player>> roster;
 
   cout << "\nCreate New Team\n";
+  // cin >> ws skips any leftover newline without eating typed characters
   cout << "Enter team name: ";
-  cin.ignore();
-  getline(cin, teamName);
+  getline(cin >> ws, teamName);
 
   cout << "Enter head coach name: ";
-  getline(cin, coachName);
+  getline(cin >> ws, coachName);
 
   cout << "Enter City Name: ";
-  getline(cin, city);
+  getline(cin >> ws, city);
 
   cout << "\nDo you want to:\n";
   cout << "1. Create team player by player\n";
   cout << "2. Generate random roster\n";
-  cout << "Enter choice (1 or 2): ";
-  cin >> choice;
+  int choice = getIntInput(1, 2, "Enter choice (1 or 2): ");
 
-  if (choice == '1') {
+  if (choice == 1) {
     cout << "\nYou will need to create:\n";
-    cout << "3 Quarterbacks\n4 Running Backs\n6 Wide Receivers\n";
-    cout << "3 Tight Ends\n9 Offensive Linemen\n8 Defensive Linemen\n";
-    cout << "7 Linebackers\n10 Defensive Backs\n1 Kicker\n1 Punter\n\n";
+    for (const auto &[position, count] : ROSTER_TEMPLATE)
+      cout << count << " x " << position_full_name(position) << "\n";
 
-    // Create each position group
-    cout << "\nQuarterbacks (3):\n";
-    for (int i = 0; i < 3; i++) {
-      cout << "\nQuarterback " << i + 1 << ":\n";
-      roster.push_back(createPlayer());
+    for (const auto &[position, count] : ROSTER_TEMPLATE) {
+      for (int i = 0; i < count; i++) {
+        cout << "\n" << position_full_name(position) << " " << i + 1 << " of "
+             << count << ":\n";
+        roster.push_back(createPlayer(position));
+      }
     }
-
-    cout << "\nRunning Backs (4):\n";
-    for (int i = 0; i < 4; i++) {
-      cout << "\nRunning Back " << i + 1 << ":\n";
-      roster.push_back(createPlayer());
-    }
-
-    cout << "\nWide Receivers (6):\n";
-    for (int i = 0; i < 6; i++) {
-      cout << "\nWide Receiver " << i + 1 << ":\n";
-      roster.push_back(createPlayer());
-    }
-
-    cout << "\nTight Ends (3):\n";
-    for (int i = 0; i < 3; i++) {
-      cout << "\nTight End " << i + 1 << ":\n";
-      roster.push_back(createPlayer());
-    }
-
-    cout << "\nOffensive Linemen (9):\n";
-    for (int i = 0; i < 9; i++) {
-      cout << "\nOffensive Lineman " << i + 1 << ":\n";
-      roster.push_back(createPlayer());
-    }
-
-    cout << "\nDefensive Linemen (8):\n";
-    for (int i = 0; i < 8; i++) {
-      cout << "\nDefensive Lineman " << i + 1 << ":\n";
-      roster.push_back(createPlayer());
-    }
-
-    cout << "\nLinebackers (7):\n";
-    for (int i = 0; i < 7; i++) {
-      cout << "\nLinebacker " << i + 1 << ":\n";
-      roster.push_back(createPlayer());
-    }
-
-    cout << "\nDefensive Backs (10):\n";
-    for (int i = 0; i < 10; i++) {
-      cout << "\nDefensive Back " << i + 1 << ":\n";
-      roster.push_back(createPlayer());
-    }
-
-    cout << "\nKicker:\n";
-    roster.push_back(createPlayer());
-
-    cout << "\nPunter:\n";
-    roster.push_back(createPlayer());
-
   } else {
-    // Generate random roster
-    for (int i = 0; i < 3; i++)
-      roster.push_back(generateRandPlayer("QB"));
-    for (int i = 0; i < 4; i++)
-      roster.push_back(generateRandPlayer("RB"));
-    for (int i = 0; i < 6; i++)
-      roster.push_back(generateRandPlayer("WR"));
-    for (int i = 0; i < 3; i++)
-      roster.push_back(generateRandPlayer("TE"));
-    for (int i = 0; i < 9; i++)
-      roster.push_back(generateRandPlayer("OL"));
-    for (int i = 0; i < 8; i++)
-      roster.push_back(generateRandPlayer("DL"));
-    for (int i = 0; i < 7; i++)
-      roster.push_back(generateRandPlayer("LB"));
-    for (int i = 0; i < 10; i++)
-      roster.push_back(generateRandPlayer("DB"));
-    roster.push_back(generateRandPlayer("K"));
-    roster.push_back(generateRandPlayer("P"));
+    roster = generateRoster();
   }
 
   return team(teamName, coachName, city, roster);
@@ -483,7 +108,7 @@ void displayTeam(const team &t) {
   cout << "Roster (" << t.get_players().size() << " players):\n";
 
   // Group players by position for organized display
-  map<string, vector<const player *>> positionGroups;
+  map<Position, vector<const player *>> positionGroups;
   for (const auto &sp : t.get_players()) {
     if (!sp)
       continue;
@@ -491,11 +116,9 @@ void displayTeam(const team &t) {
   }
 
   // Display each position group
-  vector<string> positionOrder = {"QB", "RB", "WR", "TE", "OL",
-                                  "DL", "LB", "DB", "K",  "P"};
-  for (const auto &pos : positionOrder) {
+  for (Position pos : ALL_POSITIONS) {
     if (positionGroups.count(pos)) {
-      cout << "\n" << pos << ":\n";
+      cout << "\n" << position_to_string(pos) << ":\n";
       for (const auto *p : positionGroups[pos]) {
         cout << "  " << p->get_name() << " #" << p->get_number()
              << " (OVR: " << p->get_overall_rating() << ")\n";
@@ -505,67 +128,272 @@ void displayTeam(const team &t) {
   cout << "\n";
 }
 
+// Read a whole line, so filenames and names may contain spaces
+string getLineInput(const string &prompt) {
+  string value;
+  cout << prompt;
+  getline(cin >> ws, value);
+  exitIfInputClosed();
+  return value;
+}
+
+// Make sure a league exists, creating the 32 NFL teams if needed
+void ensureLeague(league &lg) {
+  if (lg.empty()) {
+    cout << "No league loaded. Generating the 32 NFL teams...\n";
+    lg = league::create_nfl();
+  }
+}
+
+// List the league's teams with records and return the chosen index
+int pickLeagueTeam(const league &lg, const string &prompt) {
+  const vector<team> &teams = lg.get_teams();
+  cout << "\n";
+  for (size_t i = 0; i < teams.size(); ++i) {
+    cout << i + 1 << ". " << teams[i].get_city() << " "
+         << teams[i].get_team_name() << " (" << teams[i].get_record_string()
+         << ")" << ((int)i == lg.get_my_team() ? "  <- your team" : "")
+         << "\n";
+  }
+  return getIntInput(1, (int)teams.size(),
+                     prompt + " (1-" + to_string(teams.size()) + "): ") -
+         1;
+}
+
+// "Buffalo Bills"
+string fullName(const team &t) { return t.get_city() + " " + t.get_team_name(); }
+
+void printWeekResults(const league &lg, int week,
+                      const vector<scheduled_game> &games) {
+  const vector<team> &teams = lg.get_teams();
+  cout << "\nWeek " << week << " results:\n";
+  for (const scheduled_game &g : games) {
+    bool mine = g.home == lg.get_my_team() || g.away == lg.get_my_team();
+    cout << (mine ? " * " : "   ") << teams[g.away].get_team_name() << " "
+         << g.away_score << " @ " << teams[g.home].get_team_name() << " "
+         << g.home_score << (g.overtime ? " (OT)" : "") << "\n";
+  }
+}
+
+void printStandings(const league &lg) {
+  const vector<team> &teams = lg.get_teams();
+  cout << "\nSeason " << lg.get_season() << " standings";
+  if (lg.season_over())
+    cout << " (final)";
+  else if (lg.get_week() == 1)
+    cout << " (preseason)";
+  else
+    cout << " after week " << lg.get_week() - 1;
+  cout << "\n";
+  for (int d = 0; d < NUM_DIVISIONS; d++) {
+    printf("\n%-24s %3s %3s %3s %5s %5s %5s\n", division_name(d).c_str(), "W",
+           "L", "T", "PCT", "PF", "PA");
+    for (int idx : lg.division_standings(d)) {
+      const team &t = teams[idx];
+      char pct[8];
+      snprintf(pct, sizeof pct, "%.3f", t.get_win_pct());
+      // NFL style: .750, but 1.000 for an unbeaten team
+      const char *shown = pct[0] == '0' ? pct + 1 : pct;
+      printf("%-22s%s %3d %3d %3d %5s %5d %5d\n", fullName(t).c_str(),
+             idx == lg.get_my_team() ? " *" : "  ", t.get_wins(),
+             t.get_losses(), t.get_ties(), shown, t.get_points_for(),
+             t.get_points_against());
+    }
+  }
+  fflush(stdout);
+}
+
+void printTeamSchedule(const league &lg, int teamIndex) {
+  const vector<team> &teams = lg.get_teams();
+  cout << "\n" << fullName(teams[teamIndex]) << " - season "
+       << lg.get_season() << " (" << teams[teamIndex].get_record_string()
+       << ")\n";
+  for (int week = 1; week <= SEASON_WEEKS; week++) {
+    for (const scheduled_game &g : lg.get_schedule()) {
+      if (g.week != week || (g.home != teamIndex && g.away != teamIndex))
+        continue;
+      bool home = g.home == teamIndex;
+      const team &opp = teams[home ? g.away : g.home];
+      printf("Week %2d  %s %-14s", week, home ? "vs" : " @",
+             opp.get_team_name().c_str());
+      if (g.played) {
+        int us = home ? g.home_score : g.away_score;
+        int them = home ? g.away_score : g.home_score;
+        printf("  %c %d-%d%s", us > them ? 'W' : us < them ? 'L' : 'T', us,
+               them, g.overtime ? " (OT)" : "");
+      }
+      printf("\n");
+    }
+  }
+  fflush(stdout);
+}
+
+// Playing a week needs a season still in progress
+bool checkSeasonNotOver(const league &lg) {
+  if (lg.season_over()) {
+    cout << "The regular season is over. Start the next season (option 6)"
+            " to keep playing.\n";
+    return false;
+  }
+  return true;
+}
+
+void announceSeasonEnd(const league &lg) {
+  const vector<team> &teams = lg.get_teams();
+  cout << "\nThe season " << lg.get_season()
+       << " regular season is complete! Division winners:\n";
+  for (int d = 0; d < NUM_DIVISIONS; d++) {
+    const team &winner = teams[lg.division_standings(d)[0]];
+    cout << "  " << division_name(d) << ": " << fullName(winner) << " ("
+         << winner.get_record_string() << ")\n";
+  }
+}
+
+void leagueMenu(league &lg) {
+  ensureLeague(lg);
+  while (true) {
+    cout << "\nLeague - Season " << lg.get_season();
+    if (lg.season_over())
+      cout << ", regular season complete";
+    else
+      cout << ", week " << lg.get_week() << " of " << SEASON_WEEKS;
+    if (lg.get_my_team() >= 0)
+      cout << ", your team: " << fullName(lg.get_teams()[lg.get_my_team()])
+           << " (" << lg.get_teams()[lg.get_my_team()].get_record_string()
+           << ")";
+    cout << "\n1. Play next week\n";
+    cout << "2. Play next week and watch your team's game\n";
+    cout << "3. Sim to the end of the regular season\n";
+    cout << "4. Standings\n";
+    cout << "5. Team schedule & results\n";
+    cout << "6. Start next season\n";
+    cout << "7. Choose your team\n";
+    cout << "8. View a team's roster\n";
+    cout << "9. Start a new league\n";
+    cout << "10. Save league\n";
+    cout << "11. Load league\n";
+    cout << "12. Back to main menu\n";
+    int choice = getIntInput(1, 12, "Enter choice (1-12): ");
+
+    switch (choice) {
+    case 1:
+    case 2: {
+      if (!checkSeasonNotOver(lg))
+        break;
+      if (choice == 2 && lg.get_my_team() < 0)
+        lg.set_my_team(pickLeagueTeam(lg, "Choose your team first"));
+      int week = lg.get_week();
+      vector<scheduled_game> games = lg.play_week(choice == 2 ? &cout : nullptr);
+      printWeekResults(lg, week, games);
+      if (lg.season_over())
+        announceSeasonEnd(lg);
+      break;
+    }
+    case 3:
+      if (!checkSeasonNotOver(lg))
+        break;
+      while (!lg.season_over())
+        lg.play_week();
+      announceSeasonEnd(lg);
+      break;
+    case 4:
+      printStandings(lg);
+      break;
+    case 5: {
+      int teamIndex = lg.get_my_team();
+      if (teamIndex < 0 ||
+          getIntInput(1, 2, "1. Your team  2. Another team: ") == 2)
+        teamIndex = pickLeagueTeam(lg, "Enter team number");
+      printTeamSchedule(lg, teamIndex);
+      break;
+    }
+    case 6:
+      if (!lg.season_over() &&
+          getIntInput(1, 2, "The season isn't finished. Skip the rest and "
+                            "start next season? (1 = yes, 2 = no): ") != 1)
+        break;
+      lg.start_next_season();
+      cout << "Season " << lg.get_season()
+           << " begins! Records are reset and a new schedule is out.\n";
+      break;
+    case 7:
+      lg.set_my_team(pickLeagueTeam(lg, "Choose your team"));
+      cout << "You are now the GM of the "
+           << fullName(lg.get_teams()[lg.get_my_team()]) << "!\n";
+      break;
+    case 8:
+      displayTeam(lg.get_teams()[pickLeagueTeam(lg, "Enter team number")]);
+      break;
+    case 9:
+      if (getIntInput(1, 2, "This replaces the current league. Continue? "
+                            "(1 = yes, 2 = no): ") != 1)
+        break;
+      lg = league::create_nfl();
+      cout << "New league created with all 32 NFL teams.\n";
+      break;
+    case 10: {
+      string path = getLineInput("Enter filename to save the league to: ");
+      if (save_league(lg, path))
+        cout << "League saved to " << path << "\n";
+      else
+        cout << "Failed to save league to " << path << "\n";
+      break;
+    }
+    case 11: {
+      string path = getLineInput("Enter filename to load the league from: ");
+      if (load_league(path, lg))
+        cout << "Loaded season " << lg.get_season() << " league from " << path
+             << "\n";
+      else
+        cout << "Failed to load a league from " << path << "\n";
+      break;
+    }
+    case 12:
+      return;
+    }
+  }
+}
+
 int main() {
-  char choice;
-  vector<team> nflTeams;
+  int choice;
+  league lg;
 
   do {
     cout << "\nFootball Team Manager\n";
-    cout << "1. Load NFL Teams\n";
-    cout << "2. View NFL Team\n";
+    cout << "1. League & Season\n";
+    cout << "2. View a League Team\n";
     cout << "3. Create Custom Team\n";
     cout << "4. Generate Random Team\n";
-    cout << "5. Play a Game\n";
+    cout << "5. Play an Exhibition Game\n";
     cout << "6. Exit\n";
     cout << "7. Save a Team to File\n";
     cout << "8. Load a Team from File\n";
-    cout << "Enter choice (1-8): ";
-    cin >> choice;
+    choice = getIntInput(1, 8, "Enter choice (1-8): ");
 
     switch (choice) {
-    case '1': {
-      cout << "Generating NFL teams...\n";
-      nflTeams = generateNFLTeams();
-      cout << "All 32 NFL teams have been generated!\n";
+    case 1:
+      leagueMenu(lg);
       break;
-    }
-    case '2': {
-      if (nflTeams.empty()) {
-        cout << "Please load NFL teams first (option 1).\n";
-        break;
-      }
-
-      cout << "\nAvailable NFL Teams:\n";
-      for (size_t i = 0; i < nflTeams.size(); ++i) {
-        cout << i + 1 << ". " << nflTeams[i].get_team_name() << "\n";
-      }
-
-      int teamChoice;
-      cout << "\nEnter team number (1-32): ";
-      cin >> teamChoice;
-
-      if (teamChoice >= 1 && teamChoice <= 32) {
-        displayTeam(nflTeams[teamChoice - 1]);
-      } else {
-        cout << "Invalid team number.\n";
-      }
+    case 2:
+      ensureLeague(lg);
+      displayTeam(lg.get_teams()[pickLeagueTeam(lg, "Enter team number")]);
       break;
-    }
-    case '3': {
+    case 3: {
       team customTeam = createTeam();
       cout << "\nCustom team created:\n";
       displayTeam(customTeam);
       break;
     }
-    case '4': {
+    case 4: {
       team randomTeam = generateRandTeam();
       cout << "\nRandom team generated:\n";
       displayTeam(randomTeam);
       break;
     }
-    case '5': {
-      cout << "Would you like to: \n1.) Create 2 teams from scratch \n2.) Load "
-              "an NFL team and play against the computer\n3.) Generate 2 "
+    case 5: {
+      // exhibition games never change league records
+      cout << "Would you like to: \n1.) Create 2 teams from scratch \n2.) Pick "
+              "a league team and play against the computer\n3.) Generate 2 "
               "random teams and have them play\n";
       cout << "4.) Load a saved team from file and play against a generated "
               "opponent\n";
@@ -581,20 +409,9 @@ int main() {
         cout << "\nCreate Away Team:\n";
         away = createTeam();
       } else if (gameChoice == 2) {
-        // ensure NFL teams are loaded
-        if (nflTeams.empty()) {
-          cout << "NFL teams are not loaded. Generating NFL teams now...\n";
-          nflTeams = generateNFLTeams();
-        }
-
-        cout << "\nAvailable NFL Teams:\n";
-        for (size_t i = 0; i < nflTeams.size(); ++i) {
-          cout << i + 1 << ". " << nflTeams[i].get_team_name() << "\n";
-        }
-        int teamChoice =
-            getIntInput(1, (int)nflTeams.size(), "Enter team number (1-32): ");
-        // player will use the selected NFL team as home
-        home = nflTeams[teamChoice - 1];
+        ensureLeague(lg);
+        // player will use the selected league team as home
+        home = lg.get_teams()[pickLeagueTeam(lg, "Enter team number")];
         cout << "Generating a random opponent...\n";
         away = generateRandTeam();
       } else if (gameChoice == 3) {
@@ -603,9 +420,7 @@ int main() {
         away = generateRandTeam();
       } else {
         // load from file and play a generated opponent
-        cout << "Enter filename to load team from: ";
-        string path;
-        cin >> path;
+        string path = getLineInput("Enter filename to load team from: ");
         team loaded("", "", "", {});
         if (load_team(path, loaded)) {
           cout << "Loaded team: " << loaded.get_team_name() << "\n";
@@ -624,58 +439,46 @@ int main() {
       game.play_game(home, away);
       break;
     }
-    case '6':
+    case 6:
       cout << "Goodbye!\n";
       break;
-    case '7': {
+    case 7: {
       cout << "Save a team to file.\n";
-      cout << "1) Save an NFL team (must be loaded)\n";
+      cout << "1) Save a league team\n";
       cout << "2) Create a new custom team to save\n";
       cout << "3) Generate a random team to save\n";
       int schoice = getIntInput(1, 3, "Enter choice (1-3): ");
       team tsave("", "", "", {});
       if (schoice == 1) {
-        if (nflTeams.empty()) {
-          cout << "NFL teams are not loaded. Generating now...\n";
-          nflTeams = generateNFLTeams();
-        }
-        cout << "Select NFL team to save:\n";
-        for (size_t i = 0; i < nflTeams.size(); ++i)
-          cout << i + 1 << ". " << nflTeams[i].get_team_name() << "\n";
-        int idx = getIntInput(1, (int)nflTeams.size(), "Enter team number: ");
-        tsave = nflTeams[idx - 1];
+        ensureLeague(lg);
+        tsave = lg.get_teams()[pickLeagueTeam(lg, "Select team to save")];
       } else if (schoice == 2) {
         tsave = createTeam();
       } else {
         tsave = generateRandTeam();
       }
-      string path;
-      cout << "Enter filename to save to: ";
-      cin >> path;
+      string path = getLineInput("Enter filename to save to: ");
       if (save_team(tsave, path))
         cout << "Team saved to " << path << "\n";
       else
         cout << "Failed to save team to " << path << "\n";
       break;
     }
-    case '8': {
+    case 8: {
       cout << "Load a team from file.\n";
-      string path;
-      cout << "Enter filename to load from: ";
-      cin >> path;
+      string path = getLineInput("Enter filename to load from: ");
       team loaded("", "", "", {});
       if (load_team(path, loaded)) {
-        cout << "Team loaded from " << path << ":\n";
+        cout << "Team loaded from " << path << " ("
+             << loaded.get_record_string() << "):\n";
         displayTeam(loaded);
       } else {
         cout << "Failed to load team from " << path << "\n";
       }
       break;
     }
-    default:
-      cout << "Invalid choice. Please try again.\n";
     }
-  } while (choice != '6');
+  } while (choice != 6);
 
   return 0;
 }

@@ -6,18 +6,64 @@
 
 using namespace std;
 
-static void write_line(ofstream &out, const string &s) { out << s << '\n'; }
+// Every file starts with a header naming its kind and format version, e.g.
+// "FGM_TEAM 2". Team files from before version 2 have no header.
+static const string TEAM_HEADER = "FGM_TEAM";
+static const int TEAM_VERSION = 2;
+static const string LEAGUE_HEADER = "FGM_LEAGUE";
+static const int LEAGUE_VERSION = 1;
 
-bool save_team(const team &t, const string &path) {
-  ofstream out(path);
-  if (!out)
+// More players or games than any real roster or season, so a corrupt count
+// can't allocate a huge vector
+static const int MAX_SAVED_PLAYERS = 200;
+static const int MAX_SAVED_GAMES = 1000;
+
+static void write_line(ostream &out, const string &s) { out << s << '\n'; }
+
+// Helper to read a line and return false on EOF. Drops the '\r' left by
+// Windows line endings so "QB\r" still reads as "QB".
+static bool read_line(istream &in, string &out) {
+  if (!std::getline(in, out))
     return false;
+  if (!out.empty() && out.back() == '\r')
+    out.pop_back();
+  return true;
+}
 
+// Reads exactly values.size() integers from line; false if any are missing
+// or the line has anything else on it
+static bool parse_ints(const string &line, vector<int> &values) {
+  std::istringstream iss(line);
+  for (int &value : values) {
+    if (!(iss >> value))
+      return false;
+  }
+  string extra;
+  return !(iss >> extra);
+}
+
+// Version number from a "KIND N" header line: 0 if the line isn't a header
+// of that kind at all, -1 if it is but the version is unreadable
+static int header_version(const string &line, const string &kind) {
+  if (line.compare(0, kind.size() + 1, kind + " ") != 0)
+    return 0;
+  vector<int> version(1);
+  if (!parse_ints(line.substr(kind.size() + 1), version) || version[0] < 1)
+    return -1;
+  return version[0];
+}
+
+// name, coach, city, [W L T PF PA], player count, then 4 lines per player
+static void write_team(ostream &out, const team &t, bool with_record) {
   write_line(out, t.get_team_name());
   write_line(out, t.get_coach_name());
   write_line(out, t.get_city());
+  if (with_record) {
+    out << t.get_wins() << ' ' << t.get_losses() << ' ' << t.get_ties() << ' '
+        << t.get_points_for() << ' ' << t.get_points_against() << '\n';
+  }
 
-  auto players = t.get_players();
+  const auto &players = t.get_players();
   out << players.size() << '\n';
 
   for (const auto &sp : players) {
@@ -26,73 +72,20 @@ bool save_team(const team &t, const string &path) {
       write_line(out, "EMPTY");
       continue;
     }
-    string pos = sp->get_position();
-    write_line(out, pos);
+    write_line(out, sp->get_position_name());
     write_line(out, sp->get_name());
     out << sp->get_number() << ' ' << sp->get_overall_rating() << ' '
         << sp->get_age() << '\n';
 
-    // write subtype-specific attributes in a fixed order per position
-    if (pos == "QB") {
-      quarterback *q = dynamic_cast<quarterback *>(sp.get());
-      out << q->get_throw_power() << ' ' << q->get_throw_accuracy() << ' '
-          << q->get_speed() << ' ' << q->get_passing_vision() << '\n';
-    } else if (pos == "RB") {
-      runningback *r = dynamic_cast<runningback *>(sp.get());
-      out << r->get_speed() << ' ' << r->get_carrying() << ' '
-          << r->get_elusiveness() << ' ' << r->get_blocking() << '\n';
-    } else if (pos == "WR") {
-      wide_receiver *w = dynamic_cast<wide_receiver *>(sp.get());
-      out << w->get_speed() << ' ' << w->get_catching() << ' '
-          << w->get_route_running() << '\n';
-    } else if (pos == "TE") {
-      tight_end *te = dynamic_cast<tight_end *>(sp.get());
-      out << te->get_speed() << ' ' << te->get_catching() << ' '
-          << te->get_blocking() << '\n';
-    } else if (pos == "OL") {
-      lineman *ln = dynamic_cast<lineman *>(sp.get());
-      out << ln->get_strength() << ' ' << ln->get_blocking() << ' '
-          << ln->get_tackling() << '\n';
-    } else if (pos == "DL") {
-      defensive_lineman *dl = dynamic_cast<defensive_lineman *>(sp.get());
-      out << dl->get_strength() << ' ' << dl->get_tackling() << ' '
-          << dl->get_pass_rushing() << '\n';
-    } else if (pos == "LB") {
-      linebacker *lb = dynamic_cast<linebacker *>(sp.get());
-      out << lb->get_speed() << ' ' << lb->get_tackling() << ' '
-          << lb->get_coverage() << '\n';
-    } else if (pos == "DB") {
-      defensive_back *db = dynamic_cast<defensive_back *>(sp.get());
-      out << db->get_speed() << ' ' << db->get_coverage() << ' '
-          << db->get_tackling() << '\n';
-    } else if (pos == "K") {
-      kicker *k = dynamic_cast<kicker *>(sp.get());
-      out << k->get_kick_power() << ' ' << k->get_kick_accuracy() << '\n';
-    } else if (pos == "P") {
-      punter *p = dynamic_cast<punter *>(sp.get());
-      out << p->get_punt_power() << ' ' << p->get_punt_accuracy() << '\n';
-    } else {
-      // base player or unknown: write nothing extra
-      out << '\n';
-    }
+    // position-specific ratings in attribute_names() order
+    vector<int> attrs = sp->get_attributes();
+    for (size_t i = 0; i < attrs.size(); ++i)
+      out << (i ? " " : "") << attrs[i];
+    out << '\n';
   }
-
-  out.close();
-  return true;
 }
 
-// Helper to read a line and return false on EOF
-static bool read_line(ifstream &in, string &out) {
-  if (!std::getline(in, out))
-    return false;
-  return true;
-}
-
-bool load_team(const string &path, team &out_team) {
-  ifstream in(path);
-  if (!in)
-    return false;
-
+static bool read_team(istream &in, team &out_team, bool with_record) {
   string team_name, coach_name, city;
   if (!read_line(in, team_name))
     return false;
@@ -102,94 +95,160 @@ bool load_team(const string &path, team &out_team) {
     return false;
 
   string line;
+  // wins, losses, ties, points for, points against
+  vector<int> record(5, 0);
+  if (with_record) {
+    if (!read_line(in, line) || !parse_ints(line, record))
+      return false;
+    for (int value : record) {
+      if (value < 0)
+        return false;
+    }
+  }
+
   if (!read_line(in, line))
     return false;
-  size_t count = stoi(line);
+  vector<int> count_field(1);
+  if (!parse_ints(line, count_field) || count_field[0] < 0 ||
+      count_field[0] > MAX_SAVED_PLAYERS)
+    return false;
+  int count = count_field[0];
 
   vector<shared_ptr<player>> roster;
   roster.reserve(count);
 
-  for (size_t i = 0; i < count; ++i) {
-    string pos;
-    if (!read_line(in, pos))
+  for (int i = 0; i < count; ++i) {
+    string pos_name;
+    if (!read_line(in, pos_name))
       return false;
-    if (pos == "EMPTY") {
+    if (pos_name == "EMPTY") {
       roster.push_back(nullptr);
       continue;
     }
+    Position pos;
+    if (!position_from_string(pos_name, pos))
+      return false;
     string name;
     if (!read_line(in, name))
       return false;
-    int number = 0, overall = 50, age = 22;
-    if (!read_line(in, line))
+    // number, overall, age
+    vector<int> bio(3);
+    if (!read_line(in, line) || !parse_ints(line, bio))
       return false;
-    {
-      std::istringstream iss(line);
-      iss >> number >> overall >> age;
-    }
 
     // read subtype line
-    if (!read_line(in, line))
+    vector<int> attrs(attribute_names(pos).size());
+    if (!read_line(in, line) || !parse_ints(line, attrs))
       return false;
-    std::istringstream iss(line);
-
-    if (pos == "QB") {
-      int tp, ta, spd, pv;
-      iss >> tp >> ta >> spd >> pv;
-      roster.push_back(make_shared<quarterback>(pos, overall, number, age, name,
-                                                tp, ta, spd, pv));
-    } else if (pos == "RB") {
-      int s, c, e, b;
-      iss >> s >> c >> e >> b;
-      roster.push_back(make_shared<runningback>(pos, overall, number, age, name,
-                                                s, c, e, b));
-    } else if (pos == "WR") {
-      int s, c, rr;
-      iss >> s >> c >> rr;
-      roster.push_back(make_shared<wide_receiver>(pos, overall, number, age,
-                                                  name, s, c, rr));
-    } else if (pos == "TE") {
-      int s, c, bl;
-      iss >> s >> c >> bl;
-      roster.push_back(
-          make_shared<tight_end>(pos, overall, number, age, name, s, c, bl));
-    } else if (pos == "OL") {
-      int str, bl, tkl;
-      iss >> str >> bl >> tkl;
-      roster.push_back(
-          make_shared<lineman>(pos, overall, number, age, name, str, bl, tkl));
-    } else if (pos == "DL") {
-      int str, tkl, pr;
-      iss >> str >> tkl >> pr;
-      roster.push_back(make_shared<defensive_lineman>(pos, overall, number, age,
-                                                      name, str, tkl, pr));
-    } else if (pos == "LB") {
-      int s, tkl, cvr;
-      iss >> s >> tkl >> cvr;
-      roster.push_back(make_shared<linebacker>(pos, overall, number, age, name,
-                                               s, tkl, cvr));
-    } else if (pos == "DB") {
-      int s, cvr, tkl;
-      iss >> s >> cvr >> tkl;
-      roster.push_back(make_shared<defensive_back>(pos, overall, number, age,
-                                                   name, s, cvr, tkl));
-    } else if (pos == "K") {
-      int kp, ka;
-      iss >> kp >> ka;
-      roster.push_back(
-          make_shared<kicker>(pos, overall, number, age, name, kp, ka));
-    } else if (pos == "P") {
-      int pp, pa;
-      iss >> pp >> pa;
-      roster.push_back(
-          make_shared<punter>(pos, overall, number, age, name, pp, pa));
-    } else {
-      // fallback: base player
-      roster.push_back(make_shared<player>(pos, overall, number, age, name));
-    }
+    roster.push_back(make_player(pos, bio[1], bio[0], bio[2], name, attrs));
   }
 
   // construct output team
   out_team = team(team_name, coach_name, city, roster);
+  out_team.set_record(record[0], record[1], record[2], record[3], record[4]);
+  return true;
+}
+
+bool save_team(const team &t, const string &path) {
+  ofstream out(path);
+  if (!out)
+    return false;
+  out << TEAM_HEADER << ' ' << TEAM_VERSION << '\n';
+  write_team(out, t, true);
+  out.close();
+  // catches a full disk or other write failure
+  return !out.fail();
+}
+
+bool load_team(const string &path, team &out_team) {
+  ifstream in(path);
+  if (!in)
+    return false;
+
+  string first;
+  if (!read_line(in, first))
+    return false;
+  int version = header_version(first, TEAM_HEADER);
+  if (version == 0) {
+    // version 1 files have no header or record: the first line is the name
+    in.clear();
+    in.seekg(0);
+    return read_team(in, out_team, false);
+  }
+  if (version != TEAM_VERSION)
+    return false;
+  return read_team(in, out_team, true);
+}
+
+// header, "season my_team week", team count, each team with its record,
+// game count, then one "week home away played overtime home_score
+// away_score" line per scheduled game
+bool save_league(const league &lg, const string &path) {
+  ofstream out(path);
+  if (!out)
+    return false;
+  out << LEAGUE_HEADER << ' ' << LEAGUE_VERSION << '\n';
+  out << lg.get_season() << ' ' << lg.get_my_team() << ' ' << lg.get_week()
+      << '\n';
+  out << lg.get_teams().size() << '\n';
+  for (const team &t : lg.get_teams())
+    write_team(out, t, true);
+  out << lg.get_schedule().size() << '\n';
+  for (const scheduled_game &g : lg.get_schedule()) {
+    out << g.week << ' ' << g.home << ' ' << g.away << ' ' << g.played << ' '
+        << g.overtime << ' ' << g.home_score << ' ' << g.away_score << '\n';
+  }
+  out.close();
+  return !out.fail();
+}
+
+bool load_league(const string &path, league &out_league) {
+  ifstream in(path);
+  if (!in)
+    return false;
+
+  string line;
+  if (!read_line(in, line) ||
+      header_version(line, LEAGUE_HEADER) != LEAGUE_VERSION)
+    return false;
+
+  vector<int> state(3); // season, my team, next week
+  if (!read_line(in, line) || !parse_ints(line, state) || state[0] < 1 ||
+      state[1] < -1 || state[1] >= LEAGUE_TEAMS || state[2] < 1 ||
+      state[2] > SEASON_WEEKS + 1)
+    return false;
+
+  // the schedule and divisions assume exactly this many teams
+  vector<int> count(1);
+  if (!read_line(in, line) || !parse_ints(line, count) ||
+      count[0] != LEAGUE_TEAMS)
+    return false;
+
+  vector<team> teams;
+  for (int i = 0; i < count[0]; ++i) {
+    team t("", "", "", {});
+    if (!read_team(in, t, true))
+      return false;
+    teams.push_back(t);
+  }
+
+  if (!read_line(in, line) || !parse_ints(line, count) || count[0] < 0 ||
+      count[0] > MAX_SAVED_GAMES)
+    return false;
+  vector<scheduled_game> games;
+  for (int i = 0; i < count[0]; ++i) {
+    vector<int> f(7);
+    if (!read_line(in, line) || !parse_ints(line, f))
+      return false;
+    bool valid = f[0] >= 1 && f[0] <= SEASON_WEEKS && f[1] >= 0 &&
+                 f[1] < LEAGUE_TEAMS && f[2] >= 0 && f[2] < LEAGUE_TEAMS &&
+                 f[1] != f[2] && (f[3] == 0 || f[3] == 1) &&
+                 (f[4] == 0 || f[4] == 1) && f[5] >= 0 && f[6] >= 0;
+    if (!valid)
+      return false;
+    games.push_back({f[0], f[1], f[2], f[3] == 1, f[4] == 1, f[5], f[6]});
+  }
+
+  out_league = league(teams, state[0], state[1], games, state[2]);
   return true;
 }

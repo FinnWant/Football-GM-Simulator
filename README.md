@@ -6,7 +6,7 @@ Football-GM-Simulator is a lightweight, console-based simulation engine written 
 
 ## 🧩 Key Features  
 - Fully in C++ (single major executable) — no external dependencies beyond the standard library  
-- Basic object-oriented design: Player, Team, Simulator modules (see `playerH.h` / `playerIMP.cpp`, `team.h` / `teamIMP.cpp`, `simulation.h`)  
+- Basic object-oriented design: Player, Team, Simulator modules (see `playerH.h` / `playerIMP.cpp`, `team.h` / `teamIMP.cpp`, `simulation.h` / `simulation.cpp`)  
 - Persistence: Saves and loads state via the `persistence` module (`persistence.h` / `persistence.cpp`)  
 - Simulations of seasons, games, and progress of players over time  
 - Modular structure to allow you to plug in your own logic (for example: player growth, injury modelling, play-calling)  
@@ -21,40 +21,57 @@ playerH.h ← player class definitions
 playerIMP.cpp ← player class implementations
 team.h ← team class definitions
 teamIMP.cpp ← team class implementations
-simulation.h ← simulation logic (running seasons, games)
-(simulator/) ← (optional) extra resources, data sets, future UI components
+simulation.h/.cpp ← game simulation (lineups, play-by-play)
+generation.h/.cpp ← random players, rosters, teams and the NFL franchise list
+league.h/.cpp ← the 32-team league: season, standings, playing weeks
+schedule.h/.cpp ← divisions and the 17-week schedule generator
+rng.h ← shared random number generator
+tests/ ← unit tests and the balance check
+Makefile ← build script
 
 
 ## 🚀 Getting Started  
 ### Prerequisites  
-- A modern C++ compiler (supports C++11 or later)  
-- (Optional) CMake or your build system of choice  
+- A C++17 compiler (g++ 8 or later, or MSYS2 UCRT64 on Windows)  
+- make (`mingw32-make` on MSYS2)  
 - Standard library only — no additional libraries required
 
-### Build Instructions (example)  
-git clone https://github.com/FinnWant/Football-GM-Simulator.git  
-cd Football-GM-Simulator  
-# Using g++ as example:
-g++ -std=c++17 main.cpp persistence.cpp playerIMP.cpp teamIMP.cpp -o FootballGMSim  
+### Build Instructions  
+```
+git clone https://github.com/FinnWant/Football-GM-Simulator.git
+cd Football-GM-Simulator
+make              # mingw32-make on MSYS2
 ./FootballGMSim
+```
 
+### Testing
+```
+make test       # unit tests, then the balance check
+make balance    # balance report only
+```
+The balance check plays 2,000 seeded games between random teams and fails if
+league averages (points, completion %, sacks, yards per carry, ...) drift out
+of NFL-like ranges. Run it after changing anything in `simulation.cpp`.
+`./tests/balance 10000 7` plays 10,000 games with seed 7.
 
-Alternatively, if you choose to add a CMakeLists.txt, you can build with:
-mkdir build && cd build  
-cmake ..  
-make  
-./FootballGMSim
+Without make, compile every .cpp file in the top folder directly:
+```
+g++ -std=c++17 *.cpp -o FootballGMSim
+```
 
 ## Usage
 
 Once built, run FootballGMSim. You’ll be able to:
 
-Create or load a franchise (team)
-Draft or sign players (coming soon)
-Run one or more seasons of play (coming soon)
-View results, player stats, standings (comming soon)
-Save your progress and pick up later
-(Future UI enhancements or CLI menus may expand this basic workflow.)
+- Run a league of all 32 NFL teams through a 17-week season: each team plays
+  its division rivals home and away plus 11 other opponents
+- Pick your team, play week by week (or watch your team's game
+  play-by-play), check division standings and your schedule and results
+- Sim to the end of the season and start the next one with a new schedule
+- Save and load the whole league mid-season
+- Create, generate, save and load individual teams, and play exhibition
+  games that don't count toward the standings
+- Draft or sign players (coming soon)
 
 ## 📈 Why This Project?
 
